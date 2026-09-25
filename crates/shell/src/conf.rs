@@ -7,13 +7,31 @@
 use serde::de::DeserializeOwned;
 use std::path::PathBuf;
 
-/// The shared suite config: `~/.config/mdrv-ds/config.toml`.
+/// The shared suite config: `~/.config/mdrv-ds/config.toml`
+/// (Linux/XDG) or `%APPDATA%\mdrv-ds\config.toml` (Windows).
+#[cfg(target_os = "linux")]
 pub fn config_path() -> PathBuf {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| "/".into())).join(".config")
+        });
+    let _ = std::fs::create_dir_all(&base);
+    base.join("mdrv-ds").join("config.toml")
+}
+
+/// Windows twin: the suite's Roaming profile, matching the W11 core
+/// daemon (`%APPDATA%\mdrv-ds\config.toml`).
+#[cfg(windows)]
+pub fn config_path() -> PathBuf {
+    let base = std::env::var_os("APPDATA")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            std::env::var("USERPROFILE")
+                .map(|h| PathBuf::from(h).join("AppData").join("Roaming"))
+                .unwrap_or_else(|_| PathBuf::from("."))
         });
     let _ = std::fs::create_dir_all(&base);
     base.join("mdrv-ds").join("config.toml")

@@ -8,13 +8,22 @@
 
 pub mod clock;
 pub mod conf;
-pub mod daemon;
-pub mod focus;
 pub mod geom;
+
+// Linux-only suite glue: unix-socket daemon control, evdev pad reading,
+// focus arbitration via signals.
+#[cfg(target_os = "linux")]
+pub mod daemon;
+#[cfg(target_os = "linux")]
+pub mod focus;
+#[cfg(target_os = "linux")]
 pub mod host;
+#[cfg(target_os = "linux")]
 pub mod pad;
 
+#[cfg(target_os = "linux")]
 pub use host::ShellEvent;
+#[cfg(target_os = "linux")]
 pub use pad::PadButton;
 
 /// Event-channel sender type shared by every shell helper.

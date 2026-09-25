@@ -44,9 +44,25 @@ impl ClockFmt {
                 // that yields the offset zone's wall time.
                 Some(off) => {
                     let shifted = t + (off as i64) * 60;
-                    !libc::gmtime_r(&shifted, &mut tm).is_null()
+                    #[cfg(target_os = "linux")]
+                    {
+                        !libc::gmtime_r(&shifted, &mut tm).is_null()
+                    }
+                    #[cfg(windows)]
+                    {
+                        libc::gmtime_s(&mut tm, &shifted) == 0
+                    }
                 }
-                None => !libc::localtime_r(&t, &mut tm).is_null(),
+                None => {
+                    #[cfg(target_os = "linux")]
+                    {
+                        !libc::localtime_r(&t, &mut tm).is_null()
+                    }
+                    #[cfg(windows)]
+                    {
+                        libc::localtime_s(&mut tm, &t) == 0
+                    }
+                }
             };
             if !ok {
                 return "--:--".into();

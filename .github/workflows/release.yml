@@ -17,7 +17,7 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev libpipewire-0.3-dev libspa-0.2-dev libxkbcommon-dev
+          sudo apt-get install -y pkg-config libudev-dev libpipewire-0.3-dev libspa-0.2-dev libxkbcommon-dev libfontconfig1-dev libfreetype6-dev
       - name: Build (daemon + clock)
         run: cargo build --release -p mdrv-ds-linux -p mdrv-ds-clock
       - name: Package daemon
@@ -37,24 +37,15 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    # TODO: unblock by (1) clock platform split (layer-shell -> topmost
-    # window), (2) mdrv-ds-windows import: fold mdrv-ds-windows.ps1 +
-    # tools/gaming-tune/gaming-tune.ps1 into daemon CLI verbs first.
-    continue-on-error: true
+    # Portability gate: shell must stay gpui-free and cfg-clean on
+    # Windows. The clock job (and its artifact) lands with the clock
+    # platform split; the daemon lands with the mdrv-ds-windows import
+    # (PS1 scripts folded into CLI verbs first).
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Build clock
-        run: cargo build --release -p mdrv-ds-clock
-      - name: Package clock
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path target/release/clock.exe -DestinationPath "dist/clock-$($env:GITHUB_REF_NAME.TrimStart('v'))-windows-x86_64.zip"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-dist
-          path: dist/*
+      - name: Build shell (Windows portability gate)
+        run: cargo build --release -p mdrv-ds-shell
 
   release:
     if: always() && !cancelled() && startsWith(github.ref, 'refs/tags/')
