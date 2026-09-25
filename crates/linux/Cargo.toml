@@ -1,0 +1,20 @@
+[package]
+name = "mdrv-ds-linux"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "DualSense/DualShock 4 proxy daemon for Linux: BT L2CAP ownership, uhid virtual pad, PipeWire audio+haptics streaming"
+publish = false # system-specific daemon (units, /g paths); source is public
+
+[[bin]]
+name = "mdrv-ds"
+path = "src/main.rs"
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+pipewire = "0.10"
+libspa = "0.10"

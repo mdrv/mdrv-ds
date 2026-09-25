@@ -1,0 +1,60 @@
+# mdrv-ds configuration — copy to ~/.config/mdrv-ds/config.toml
+#
+# PS-button chords: while PS is held, pressing a bound button runs a shell
+# command. The button press AND the PS press are swallowed from the relayed
+# report (until PS is released), so games and mdrv-gm's PS-tap never see them.
+# Apply changes with: mdrv-ds keymap reload
+
+# Top-level options (must appear BEFORE any [table]):
+# transport = 'l2cap'    # self-owned BT HID session (see README)
+# force_bus = 'usb'      # USB-chimera view: on a BT (l2cap) DualSense
+#                       # session, create the virtual pad as bus=USB with
+#                       # the USB report descriptor and translate frames
+#                       # both ways — for games that gate adaptive triggers
+#                       # on "pad is Bluetooth" (PRAGMATA). Leave unset for
+#                       # the native BT presentation (required by FF16).
+#                       # Takes effect on the next pad (re)connect.
+# swap_cross_circle = true # Swap the cross (X) and circle (O) face buttons
+#                       # on the virtual pad — JP-style confirm where O
+#                       # confirms. Applied before every consumer (game,
+#                       # kernel, chords), so games visibly respond to the
+#                       # swapped button. On-screen prompt glyphs are NOT
+#                       # redrawn. DualSense chimera sessions; default off.
+
+[chords]
+# screenshot
+share    = 'shell:grim /tmp/shot-$(date +%s).png'
+# MangoHUD toggle (RShift+F12 via ydotool)
+north    = 'shell:ydotool key 54:1 88:1 88:0 54:0'
+# touchpad-as-mouse toggle (mdrv-ds mouse toggle)
+touchpad = 'shell:mdrv-ds mouse toggle'
+
+# Button names: south|cross, east|circle, west|square, north|triangle,
+#   l1, r1, l3, r3, l2, r2 (analog, fires past ~25% press), share|create,
+#   options|start, touchpad
+# (D-pad chords intentionally unsupported: mdrv-gm overlay navigation uses them.)
+
+# Event callback: runs `command` via sh -c after every chord fire, with the
+# event as env vars: MDRV_CHORD (button), MDRV_COMMAND (executed command or
+# 'ps:toggle'), MDRV_STATUS (success|failed), MDRV_CODE (exit code),
+# MDRV_OUTPUT (merged stdout+stderr, capped 500B). 'when' = always|on-failure.
+[notify]
+#enabled = true
+#when    = 'always'
+#command = 'notify-send -a mdrv-ds -u low "mdrv-ds" "$MDRV_CHORD: $MDRV_STATUS${MDRV_OUTPUT:+ — $MDRV_OUTPUT}"'
+
+# [audio] — Bluetooth audio. The PipeWire sink ("DualSense Wireless
+# Controller (BT) Pro Audio") always exists on BT: games route haptic
+# feedback through it. USB pads already expose native USB audio.
+#output = false          # EXPERIMENTAL: physical speaker / 3.5mm jack output
+#bitrate = 160000        # Opus CBR bps; 160000 is the hardware-verified value
+#speaker = true          # force internal speaker; absent = auto-route by jack
+#test_tone = false       # Phase-1 440 Hz verification tone
+#volume = 0x64           # headphone volume 0x00..0x7f
+#speaker_output = 'forward' # Where the pad-stream's music (front) channels
+#                       # go: 'pad' (default — pad speaker), 'forward' (play
+#                       # on the normal system output; pad speaker silent,
+#                       # haptics unaffected — rerouting in pavucontrol
+#                       # breaks rumble, this doesn't), or 'mute' (drop).
+#speaker_target = 'alsa_output.pci-xxxx.analog-stereo' # node.name to play
+#                       # on when speaker_output='forward'; absent = default.
