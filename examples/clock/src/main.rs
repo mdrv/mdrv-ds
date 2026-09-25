@@ -23,8 +23,10 @@
 //!                           # out with false if the font looks wrong
 //! ```
 
+#[cfg(target_os = "linux")]
 use std::io::Write as _;
 
+#[cfg(target_os = "linux")]
 use gpui::layer_shell::{Anchor, KeyboardInteractivity, Layer, LayerShellOptions};
 use gpui::prelude::*;
 use gpui::{
@@ -32,6 +34,7 @@ use gpui::{
     WindowBackgroundAppearance, WindowBounds, WindowKind, WindowOptions,
 };
 use mdrv_ds_shell::clock::{ClockFmt, ClockSection};
+#[cfg(target_os = "linux")]
 use mdrv_ds_shell::host::runtime_dir;
 
 const APP: &str = "mdrv-ds-clock";
@@ -47,7 +50,8 @@ fn main() {
                  \x20 {APP} [toggle]   show the clock, or kill it if shown\n\
                  \x20 {APP} stop       kill a shown clock\n\
                  \x20 {APP} show       run the clock in this process (used by toggle)\n\
-                 Config: ~/.config/mdrv-ds/clock.toml"
+                 Config: {}",
+                clock_toml_path().display()
             );
         }
         Some(other) => {
@@ -59,10 +63,12 @@ fn main() {
 
 // ---- CLI verbs --------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 fn sock_path() -> std::path::PathBuf {
     runtime_dir().join(format!("{APP}.sock"))
 }
 
+#[cfg(target_os = "linux")]
 fn send_line(line: &str) -> Result<(), String> {
     let mut s = std::os::unix::net::UnixStream::connect(sock_path())
         .map_err(|e| format!("connect: {e}"))?;
@@ -71,6 +77,7 @@ fn send_line(line: &str) -> Result<(), String> {
 }
 
 /// Toggle: a live instance dies, otherwise a detached one is summoned.
+#[cfg(target_os = "linux")]
 fn toggle() {
     if send_line("stop").is_ok() {
         println!("{APP}: hidden");
@@ -91,6 +98,18 @@ fn toggle() {
     std::process::exit(1);
 }
 
+/// Windows: no control socket yet (named-pipe IPC lands with the
+/// mdrv-ds-windows import) — toggle just summons a fresh instance.
+#[cfg(target_os = "windows")]
+fn toggle() {
+    if let Err(e) = spawn_detached() {
+        eprintln!("{APP}: {e}");
+        std::process::exit(1);
+    }
+    println!("{APP}: shown (kill-switch arrives with named-pipe IPC)");
+}
+
+#[cfg(target_os = "linux")]
 fn stop() {
     match send_line("stop") {
         Ok(()) => println!("{APP}: hidden"),
@@ -101,8 +120,15 @@ fn stop() {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn stop() {
+    eprintln!("{APP}: stop is not wired on Windows yet (no control socket)");
+    std::process::exit(2);
+}
+
 /// Detached `show` child: own process group, no controlling tty — chord
 /// children and keybinds must never wait on the clock process.
+#[cfg(target_os = "linux")]
 fn spawn_detached() -> std::io::Result<()> {
     use std::os::unix::process::CommandExt;
     use std::process::{Command, Stdio};
@@ -122,6 +148,23 @@ fn spawn_detached() -> std::io::Result<()> {
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     cmd.spawn()?;
+    Ok(())
+}
+
+/// Windows: CREATE_NO_WINDOW keeps a console from flashing when the
+/// toggle verb spawns us from a shortcut/keybind.
+#[cfg(target_os = "windows")]
+fn spawn_detached() -> std::io::Result<()> {
+    use std::os::windows::process::CommandExt;
+    use std::process::{Command, Stdio};
+    let exe = std::env::current_exe()?;
+    Command::new(exe)
+        .arg("show")
+        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()?;
     Ok(())
 }
 
@@ -192,6 +235,7 @@ fn parse_hex(s: &str) -> Option<Rgba> {
 
 /// Serve `{APP}.sock`: any `stop`/`toggle` line ends the process; other
 /// lines are just liveness pings.
+#[cfg(target_os = "linux")]
 fn spawn_ctrl_socket() {
     use std::io::BufRead;
     let path = sock_path();
@@ -222,6 +266,7 @@ fn spawn_ctrl_socket() {
 
 // ---- GPUI app ---------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 fn in_gamescope() -> bool {
     if std::env::var("MDRV_DS_SESSION").is_ok_and(|v| v == "gamescope") {
         return true;
@@ -229,6 +274,11 @@ fn in_gamescope() -> bool {
     std::env::var("WAYLAND_DISPLAY")
         .map(|v| v.starts_with("gamescope"))
         .unwrap_or(false)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn in_gamescope() -> bool {
+    false
 }
 
 struct ClockView {
@@ -297,6 +347,7 @@ impl Render for ClockView {
 
 fn show() {
     eprintln!("{APP}: starting (pid {})", std::process::id());
+    #[cfg(target_os = "linux")]
     spawn_ctrl_socket();
 
     let cfg = ClockCfg::load();
@@ -306,6 +357,7 @@ fn show() {
         let view_cfg = cfg.clone();
         let view_family = family.clone();
 
+        #[cfg(target_os = "linux")]
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(Bounds {
                 origin: gpui::point(px(0.), px(0.)),
@@ -325,6 +377,21 @@ fn show() {
                 anchor: Anchor::TOP | Anchor::BOTTOM | Anchor::LEFT | Anchor::RIGHT,
                 ..Default::default()
             }),
+            ..Default::default()
+        };
+
+        // Windows: PopUp ⇒ WS_EX_TOOLWINDOW|WS_EX_TOPMOST in the fork's
+        // backend — borderless topmost surface, closest analogue to the
+        // layer-shell overlay. Fixed bounds for now (no monitor query).
+        #[cfg(target_os = "windows")]
+        let options = WindowOptions {
+            window_bounds: Some(WindowBounds::Windowed(Bounds {
+                origin: gpui::point(px(100.), px(100.)),
+                size: size(px(800.), px(260.)),
+            })),
+            window_background: WindowBackgroundAppearance::Transparent,
+            show: true,
+            kind: WindowKind::PopUp,
             ..Default::default()
         };
 
