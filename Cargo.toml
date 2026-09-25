@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/linux"]
-default-members = ["crates/core", "crates/linux"]
+members = ["crates/core", "crates/linux", "crates/shell", "examples/clock"]
+default-members = ["crates/core", "crates/linux", "crates/shell", "examples/clock"]
 # crates/windows joins the workspace once the Windows daemon is imported
 # from github.com/mdrv/mdrv-ds-windows (see crates/windows/README.md);
 # it must stay out of default-members so Linux `cargo check` stays green.

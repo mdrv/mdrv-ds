@@ -1,0 +1,15 @@
+[package]
+name = "mdrv-ds-shell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Shared plumbing for the mdrv-ds suite: suite config access, clock formatting, pad reading (evdev), proxy bridge host, focus arbitration, daemon CLI verbs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+futures = "0.3"
+evdev = "0.13"
+libc = "0.2"
