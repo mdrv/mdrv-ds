@@ -57,6 +57,6 @@ jobs:
           merge-multiple: true
           path: dist
       - name: Create release
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes dist/*
+        run: gh release create "$GITHUB_REF_NAME" --repo mdrv/mdrv-ds --title "$GITHUB_REF_NAME" --generate-notes dist/*
         env:
           GH_TOKEN: ${{ github.token }}
