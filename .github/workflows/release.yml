@@ -1,0 +1,71 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libudev-dev libpipewire-0.3-dev libspa-0.2-dev libxkbcommon-dev
+      - name: Build (daemon + clock)
+        run: cargo build --release -p mdrv-ds-linux -p mdrv-ds-clock
+      - name: Package daemon
+        run: |
+          mkdir -p dist pkg/mdrv-ds
+          cp target/release/mdrv-ds pkg/mdrv-ds/
+          cp -r deploy pkg/mdrv-ds/deploy
+          cp config/config.toml.example pkg/mdrv-ds/
+          cp README.md pkg/mdrv-ds/
+          tar -czf "dist/mdrv-ds-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C pkg mdrv-ds
+      - name: Package clock
+        run: tar -czf "dist/clock-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C target/release clock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-dist
+          path: dist/*
+
+  windows:
+    runs-on: windows-latest
+    # TODO: unblock by (1) clock platform split (layer-shell -> topmost
+    # window), (2) mdrv-ds-windows import: fold mdrv-ds-windows.ps1 +
+    # tools/gaming-tune/gaming-tune.ps1 into daemon CLI verbs first.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build clock
+        run: cargo build --release -p mdrv-ds-clock
+      - name: Package clock
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path target/release/clock.exe -DestinationPath "dist/clock-$($env:GITHUB_REF_NAME.TrimStart('v'))-windows-x86_64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist
+          path: dist/*
+
+  release:
+    if: always() && !cancelled() && startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+      - name: Create release
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes dist/*
+        env:
+          GH_TOKEN: ${{ github.token }}

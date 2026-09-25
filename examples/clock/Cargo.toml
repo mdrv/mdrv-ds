@@ -13,14 +13,11 @@ name = "clock"
 path = "src/main.rs"
 
 [dependencies]
-gpui = { path = "/g/gpui-ce/crates/gpui", package = "mdrv-gpui-ce" }
-gpui_platform = { path = "/g/gpui-ce/crates/gpui_platform", package = "mdrv-gpui-platform", features = ["wayland", "x11"] }
+# Policy-B (git-tag) form so CI/release runners can build without the
+# /g/gpui-ce checkout; local path form is the dev convention (swap back
+# when iterating on the fork).
+gpui = { package = "mdrv-gpui-ce", git = "https://github.com/mdrv/gpui-ce", tag = "mdrv-gpui-0.0.260925" }
+gpui_platform = { package = "mdrv-gpui-platform", git = "https://github.com/mdrv/gpui-ce", tag = "mdrv-gpui-0.0.260925", features = ["wayland", "x11"] }
 mdrv-ds-shell = { path = "../../crates/shell" }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
-
-[patch.crates-io]
-arrayref = { path = "/g/gpui-ce/vendor/arrayref" }
-
-[profile.release]
-opt-level = 2

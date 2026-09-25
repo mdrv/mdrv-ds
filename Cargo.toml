@@ -15,3 +15,9 @@ repository = "https://github.com/mdrv/mdrv-ds"
 
 [profile.release]
 opt-level = 2
+
+# Required by gpui (git-tag consumers of the fork); only meaningful for
+# examples/* that pull gpui. Proven form: cargo finds `arrayref` among
+# the repo's workspace members.
+[patch.crates-io]
+arrayref = { git = "https://github.com/mdrv/gpui-ce" }
