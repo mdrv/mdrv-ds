@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/linux"]
+default-members = ["crates/core", "crates/linux"]
+# crates/windows joins the workspace once the Windows daemon is imported
+# from github.com/mdrv/mdrv-ds-windows (see crates/windows/README.md);
+# it must stay out of default-members so Linux `cargo check` stays green.
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+authors = ["mdrv"]
+repository = "https://github.com/mdrv/mdrv-ds"
+
+[profile.release]
+opt-level = 2

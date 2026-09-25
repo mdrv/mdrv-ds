@@ -1,0 +1,8 @@
+[package]
+name = "mdrv-ds-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "DualSense protocol dialect and shared helpers: report builders (0x31/0x35/0x36/0x39/0x02), CRC-32 with HIDP 0xA2 seed, media (opus/resample) and input math"
