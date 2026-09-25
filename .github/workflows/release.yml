@@ -17,7 +17,7 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev libpipewire-0.3-dev libspa-0.2-dev libxkbcommon-dev libfontconfig1-dev libfreetype6-dev libopus-dev
+          sudo apt-get install -y pkg-config libudev-dev libpipewire-0.3-dev libspa-0.2-dev libxkbcommon-dev libxkbcommon-x11-dev libxcb1-dev libfontconfig1-dev libfreetype6-dev libopus-dev
       - name: Build (daemon + clock)
         run: cargo build --release -p mdrv-ds-linux -p mdrv-ds-clock
       - name: Package daemon
