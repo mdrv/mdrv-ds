@@ -1,0 +1,26 @@
+[package]
+name = "mdrv-ds-clock"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Clock example for the mdrv-ds shell: overlay-footer formatting as a standalone screensaver-style clock"
+publish = false # depends on the gpui fork (not on crates.io)
+
+[[bin]]
+name = "clock"
+path = "src/main.rs"
+
+[dependencies]
+gpui = { path = "/g/gpui-ce/crates/gpui", package = "mdrv-gpui-ce" }
+gpui_platform = { path = "/g/gpui-ce/crates/gpui_platform", package = "mdrv-gpui-platform", features = ["wayland", "x11"] }
+mdrv-ds-shell = { path = "../../crates/shell" }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+[patch.crates-io]
+arrayref = { path = "/g/gpui-ce/vendor/arrayref" }
+
+[profile.release]
+opt-level = 2
